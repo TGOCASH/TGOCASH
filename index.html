@@ -88,7 +88,6 @@
         <p id="login-error">Clave incorrecta. Intenta de nuevo.</p>
       </div>
     </div>
-
     <div class="sidebar">
       <div class="sidebar-header"><img src="https://i.postimg.cc/MG0Bjv8s/Primary-Logo.png" alt="Logo" class="logo-tgo"><span>Technology, Gas & Oil</span></div>
       <ul class="nav-menu">
@@ -108,7 +107,12 @@
     </div>
 
     <div class="contenido-principal">
-      <div class="header-app"><h1 id="titulo-pagina">Dashboard Financiero</h1><button class="btn-tgo" onclick="abrirModal()"><i class="fas fa-plus"></i> Nueva Transacción</button></div>
+      <div class="header-app"><h1 id="titulo-pagina">Dashboard Financiero</h1>
+        <div style="display:flex; align-items:center; gap:15px;">
+          <span id="usuario-actual" style="font-size:13px; color:#64748b; font-weight:600;"></span>
+          <button class="btn-tgo" onclick="abrirModal()"><i class="fas fa-plus"></i> Nueva Transacción</button>
+        </div>
+      </div>
       <p id="mensaje-carga"><i class="fas fa-circle-notch fa-spin"></i> Sincronizando datos corporativos...</p>
 
       <div id="kpi-bloque" class="kpi-container" style="display: none;"></div>
@@ -116,13 +120,13 @@
       <div id="vista-dashboard" class="seccion-app" style="display: none;">
         <div class="dashboard-grid">
           <div class="tarjeta"><h3>Libro Diario de la App (Nuevos Registros)</h3>
-            <table><thead><tr><th>Fecha</th><th>Origen</th><th>Concepto</th><th>Cuenta Utilizada</th><th>Monto</th><th style="text-align:center;">Acciones</th></tr></thead><tbody id="tabla-body"></tbody></table>
+            <table><thead><tr><th>Fecha</th><th>Origen</th><th>Concepto</th><th>Cuenta Utilizada</th><th>Monto</th><th>Usuario</th><th style="text-align:center;">Acciones</th></tr></thead><tbody id="tabla-body"></tbody></table>
           </div>
           <div class="tarjeta"><h3>Distribución</h3><div class="grafica-container"><canvas id="graficaResumen"></canvas></div></div>
         </div>
       </div>
       <div id="vista-proyectos" class="seccion-app" style="display: none;"><div class="proyectos-grid" id="contenedor-proyectos-cards"></div></div>
-      <div id="vista-detalle-proyecto" class="seccion-app" style="display: none;"><button class="btn-volver" onclick="cambiarVista('proyectos')"><i class="fas fa-arrow-left"></i> Volver a Proyectos</button><div class="tarjeta"><table><thead><tr><th>Fecha</th><th>Concepto</th><th>Proveedor/Cliente</th><th>Estatus</th><th>Monto</th><th style="text-align:center;">Acciones</th></tr></thead><tbody id="tabla-detalle-proyecto-body"></tbody></table></div></div>
+      <div id="vista-detalle-proyecto" class="seccion-app" style="display: none;"><button class="btn-volver" onclick="cambiarVista('proyectos')"><i class="fas fa-arrow-left"></i> Volver a Proyectos</button><div class="tarjeta"><table><thead><tr><th>Fecha</th><th>Concepto</th><th>Proveedor/Cliente</th><th>Estatus</th><th>Monto</th><th>Usuario</th><th style="text-align:center;">Acciones</th></tr></thead><tbody id="tabla-detalle-proyecto-body"></tbody></table></div></div>
       <div id="vista-tablas-modulos" class="seccion-app" style="display: none;"><div class="tarjeta"><h3 id="titulo-tabla-modulo"></h3><table><thead id="header-tabla-modulo"></thead><tbody id="body-tabla-modulo"></tbody></table></div></div>
     </div>
 
@@ -165,7 +169,7 @@
       // CONFIGURACIÓN DE CONEXIÓN AL BACKEND (Apps Script Web App)
       // Reemplaza la URL de abajo con la URL "/exec" de tu implementación
       // ============================================================
-      const URL_API = "https://script.google.com/macros/s/AKfycby_vqG-LCDv0O7G-HAxpgvdUoURnlY-Gw7gsoxhFDMBmppuW0iyGa9PpCkip2dan0G0/exec";
+      const URL_API = "URL_API_AQUI";
 
       let CLAVE_SESION = null; // se llena al hacer login
       let miGrafica = null; let datosGlobales = null; let vistaActual = 'dashboard'; let subProyectoActivo = null;
@@ -233,6 +237,9 @@
 
       function procesarDatos(datos) {
         datosGlobales = datos; document.getElementById('mensaje-carga').style.display = 'none'; document.getElementById('kpi-bloque').style.display = 'grid';
+        if (datos.usuarioActual) {
+          document.getElementById('usuario-actual').innerHTML = `<i class="fas fa-user-circle"></i> ${datos.usuarioActual}`;
+        }
         cambiarVista(vistaActual);
       }
 
@@ -347,13 +354,13 @@
           let t = document.getElementById('tabla-body'); t.innerHTML = "";
           let unicamenteApp = datosGlobales.listaDetalles.filter(f => f.id !== null);
           if (unicamenteApp.length === 0) {
-            t.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b; padding:20px;"><i class="fas fa-info-circle"></i> No has registrado nuevos movimientos hoy. Usa el botón superior de "+ Nueva Transacción".</td></tr>`;
+            t.innerHTML = `<tr><td colspan="7" style="text-align:center; color:#64748b; padding:20px;"><i class="fas fa-info-circle"></i> No has registrado nuevos movimientos hoy. Usa el botón superior de "+ Nueva Transacción".</td></tr>`;
           } else {
             unicamenteApp.slice().reverse().forEach(f => {
               let tc = f.tipo === 'Ingreso' ? 'tag-ingreso' : 'tag-egreso'; if(f.tipo === 'Transferencia') tc = 'tag-transferencia';
               let cEsc = f.concepto.replace(/'/g, "\\'");
               let pEsc = (f.proveedorCliente||'').replace(/'/g, "\\'");
-              t.innerHTML += `<tr><td>${f.fecha}</td><td><strong>${f.origen}</strong></td><td>${f.concepto}</td><td><span class="${tc}">${f.banco}</span></td><td><strong>${formatUSD(f.monto)}</strong></td><td style="text-align:center;">
+              t.innerHTML += `<tr><td>${f.fecha}</td><td><strong>${f.origen}</strong></td><td>${f.concepto}</td><td><span class="${tc}">${f.banco}</span></td><td><strong>${formatUSD(f.monto)}</strong></td><td>${f.usuario||'—'}</td><td style="text-align:center;">
                 <button class="btn-editar-lapiz" onclick="abrirEditarModal('${f.id}', '${f.tipo}', '${f.origen}', '${f.banco}', '${cEsc}', ${f.monto}, '${pEsc}', '${f.estado}')" title="Modificar Registro"><i class="fas fa-edit"></i></button>
                 <button class="btn-borrar" onclick="borrar('${f.id}', '${cEsc}')" title="Eliminar Registro"><i class="fas fa-trash-alt"></i></button>
               </td></tr>`;
@@ -410,7 +417,7 @@
                 ? `<button class="btn-editar-lapiz" onclick="abrirEditarModal('${f.id}', '${f.tipo}', '${f.origen}', '${f.banco}', '${cEsc}', ${f.monto}, '${pEsc}', '${f.estado}')" title="Modificar"><i class="fas fa-edit"></i></button><button class="btn-borrar" onclick="borrar('${f.id}', '${cEsc}')" title="Eliminar"><i class="fas fa-trash-alt"></i></button>`
                 : `<i class="fas fa-lock icono-protegido"></i>`;
               let tc = f.estado === 'Por Pagar' ? 'tag-pendiente' : 'tag-egreso';
-              tb.innerHTML += `<tr><td>${f.fecha}</td><td><strong>${f.concepto}</strong></td><td>${f.proveedorCliente||'—'}</td><td><span class="${tc}">${f.estado}</span></td><td><strong>${formatUSD(f.monto)}</strong></td><td style="text-align:center;">${btnAcciones}</td></tr>`;
+              tb.innerHTML += `<tr><td>${f.fecha}</td><td><strong>${f.concepto}</strong></td><td>${f.proveedorCliente||'—'}</td><td><span class="${tc}">${f.estado}</span></td><td><strong>${formatUSD(f.monto)}</strong></td><td>${f.usuario||'—'}</td><td style="text-align:center;">${btnAcciones}</td></tr>`;
             });
             configurarKPIs([{t:"Total Gastado", m: total, color:'normal'}]);
           } else {
@@ -423,7 +430,7 @@
               let btnAcciones = f.id !== null
                 ? `<button class="btn-editar-lapiz" onclick="abrirEditarModal('${f.id}', '${f.tipo}', '${f.origen}', '${f.banco}', '${cEsc}', ${f.monto}, '${pEsc}', '${f.estado}')" title="Modificar"><i class="fas fa-edit"></i></button><button class="btn-borrar" onclick="borrar('${f.id}', '${cEsc}')" title="Eliminar"><i class="fas fa-trash-alt"></i></button>`
                 : `<i class="fas fa-lock icono-protegido"></i>`;
-              tb.innerHTML += `<tr><td>${f.fecha}</td><td><strong>${f.concepto}</strong></td><td>${f.proveedorCliente||'—'}</td><td><span class="${tc}">${f.estado}</span></td><td><strong>${formatUSD(f.monto)}</strong></td><td style="text-align:center;">${btnAcciones}</td></tr>`;
+              tb.innerHTML += `<tr><td>${f.fecha}</td><td><strong>${f.concepto}</strong></td><td>${f.proveedorCliente||'—'}</td><td><span class="${tc}">${f.estado}</span></td><td><strong>${formatUSD(f.monto)}</strong></td><td>${f.usuario||'—'}</td><td style="text-align:center;">${btnAcciones}</td></tr>`;
             });
             configurarKPIs([
               {t:"Contratado", m: calc.contratado, color:'normal'},
