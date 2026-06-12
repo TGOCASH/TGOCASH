@@ -140,7 +140,19 @@
             <option value="Egreso">Egreso (Gasto/Pago)</option>
             <option value="Transferencia">Transferencia Interna</option>
             <option value="Contrato">Nuevo Contrato (Monto del Proyecto)</option>
+            <option value="Prestamo">Préstamo Recibido</option>
           </select>
+        </div>
+        <div class="form-group" id="grupo-interes" style="display:none;">
+          <label>Interés</label>
+          <div style="display:flex; gap:10px;">
+            <select id="inputTipoInteres" style="flex:0 0 110px;" onchange="actualizarInteresCalculado()">
+              <option value="porcentaje">% sobre principal</option>
+              <option value="fijo">Monto fijo ($)</option>
+            </select>
+            <input type="number" id="inputValorInteres" step="0.01" placeholder="0" oninput="actualizarInteresCalculado()" style="flex:1;">
+          </div>
+          <p id="texto-interes-calculado" style="font-size:12px; color:#64748b; margin:6px 0 0;"></p>
         </div>
         <div class="form-group" id="grupo-proyecto">
           <label>Proyecto</label>
@@ -159,7 +171,7 @@
           <select id="inputBancoDestino"><option value="Cuenta Mercury">Cuenta Mercury</option><option value="Cuenta Truist">Cuenta Truist</option><option value="Efectivo">Caja de Efectivo</option><option value="Tarjeta IO">Tarjeta IO</option><option value="USDT Tomas">USDT Tomas</option></select>
         </div>
         <div class="form-group"><label>Concepto</label><input type="text" id="inputConcepto"></div>
-        <div class="form-group"><label>Monto</label><input type="number" id="inputMonto" step="0.01"></div>
+        <div class="form-group"><label>Monto</label><input type="number" id="inputMonto" step="0.01" oninput="actualizarInteresCalculado()"></div>
         <div class="modal-botones"><button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button><button class="btn-guardar" onclick="guardarTransaccion()">Guardar</button></div>
       </div>
     </div>
@@ -169,7 +181,7 @@
       // CONFIGURACIÓN DE CONEXIÓN AL BACKEND (Apps Script Web App)
       // Reemplaza la URL de abajo con la URL "/exec" de tu implementación
       // ============================================================
-      const URL_API = "https://script.google.com/macros/s/AKfycby_vqG-LCDv0O7G-HAxpgvdUoURnlY-Gw7gsoxhFDMBmppuW0iyGa9PpCkip2dan0G0/exec";
+      const URL_API = "URL_API_AQUI";
 
       let CLAVE_SESION = null; // se llena al hacer login
       let miGrafica = null; let datosGlobales = null; let vistaActual = 'dashboard'; let subProyectoActivo = null;
@@ -261,6 +273,8 @@
           if (f.tipo === 'Ingreso') {
             if (f.concepto === 'Monto del Contrato') {
               r.contratado += f.monto;
+            } else if (f.estado === 'Préstamo') {
+              // Préstamo recibido: solo flujo de caja, no es cobro de cliente
             } else {
               r.cobrado += f.monto;
             }
@@ -299,6 +313,7 @@
         grupoBanco.style.display = 'block';
         grupoProveedor.style.display = 'none';
         opcNinguno.style.display = 'block';
+        document.getElementById('grupo-interes').style.display = 'none';
 
         if (t === 'Transferencia') {
           grupoProyecto.style.display = 'none';
@@ -310,6 +325,17 @@
           grupoBanco.style.display = 'none';
           inputConcepto.value = 'Monto del Contrato';
           inputConcepto.setAttribute('readonly', 'true');
+        } else if (t === 'Prestamo') {
+          lblBanco.innerText = "Cuenta que recibe el préstamo";
+          opcNinguno.style.display = 'none';
+          if (inputBanco.value === 'Ninguno') inputBanco.value = 'Cuenta Mercury';
+          grupoProveedor.style.display = 'block';
+          lblProveedor.innerText = "Prestamista";
+          document.getElementById('grupo-interes').style.display = 'block';
+          inputConcepto.removeAttribute('readonly');
+          if (inputConcepto.value === 'Monto del Contrato') inputConcepto.value = '';
+          if (!inputConcepto.value) inputConcepto.value = 'Préstamo recibido';
+          actualizarInteresCalculado();
         } else if (t === 'Egreso') {
           lblBanco.innerText = "Cuenta Afectada";
           grupoProveedor.style.display = 'block';
@@ -321,6 +347,16 @@
           inputConcepto.removeAttribute('readonly');
           if (inputConcepto.value === 'Monto del Contrato') inputConcepto.value = '';
         }
+      }
+
+      function actualizarInteresCalculado() {
+        let principal = parseFloat(document.getElementById('inputMonto').value) || 0;
+        let tipoInteres = document.getElementById('inputTipoInteres').value;
+        let valor = parseFloat(document.getElementById('inputValorInteres').value) || 0;
+        let interesMonto = (tipoInteres === 'porcentaje') ? (principal * valor / 100) : valor;
+        let total = principal + interesMonto;
+        document.getElementById('texto-interes-calculado').innerText =
+          `Interés: ${formatUSD(interesMonto)} · Total a devolver: ${formatUSD(total)}`;
       }
 
       function cambiarVista(vista) {
@@ -337,7 +373,10 @@
             cxc.push({ origen: key, titulo: PROYECTOS_DEF[key], concepto: 'Saldo de contrato pendiente', montoRestante: calc.porCobrar, fecha: '—' });
           }
         });
-        cxp = datosGlobales.listaDetalles.filter(f => f.tipo === 'Egreso' && f.estado === 'Por Pagar');
+        cxp = datosGlobales.listaDetalles.filter(f =>
+          (f.tipo === 'Egreso' && f.estado === 'Por Pagar') ||
+          (f.tipo === 'Ingreso' && f.estado === 'Préstamo')
+        );
 
         if (vista === 'dashboard') {
           document.getElementById('vista-dashboard').style.display = 'block'; document.getElementById('menu-dashboard').classList.add('activo');
@@ -490,7 +529,8 @@
           }
           if(ctx==='pagar') {
             btn = `<button class="btn-accion-tabla" onclick="marcarComoPagado('${f.id}')">Marcar Pagado</button>`;
-            tb.innerHTML += `<tr><td>${f.fecha}</td><td><strong>${f.origen}</strong></td><td>${f.proveedorCliente||'—'}</td><td>${f.concepto}</td><td><strong>${formatUSD(f.monto)}</strong></td><td>${btn}</td></tr>`;
+            let etiqueta = (f.tipo === 'Ingreso' && f.estado === 'Préstamo') ? `${f.concepto} (préstamo)` : f.concepto;
+            tb.innerHTML += `<tr><td>${f.fecha}</td><td><strong>${f.origen}</strong></td><td>${f.proveedorCliente||'—'}</td><td>${etiqueta}</td><td><strong>${formatUSD(f.monto)}</strong></td><td>${btn}</td></tr>`;
             return;
           }
           if(ctx==='banco') {
@@ -508,6 +548,23 @@
       function marcarComoPagado(id) {
         let registro = datosGlobales.listaDetalles.find(f => f.id === id);
         if (!registro) return;
+
+        if (registro.tipo === 'Ingreso' && registro.estado === 'Préstamo') {
+          // Es un préstamo (CxP a prestamista): el pago es un NUEVO egreso, no edita el registro original
+          idEdicionActivo = null;
+          document.getElementById('inputTipo').value = 'Egreso';
+          ajustarFormularioPorTipo();
+          document.getElementById('inputProyecto').value = registro.origen;
+          document.getElementById('inputConcepto').value = `Pago a ${registro.proveedorCliente || 'prestamista'} (capital${registro.interes ? ' + interés' : ''})`;
+          document.getElementById('inputMonto').value = registro.monto;
+          document.getElementById('inputProveedor').value = registro.proveedorCliente || '';
+          document.getElementById('inputBanco').value = "Cuenta Mercury";
+          document.getElementById('grupo-proveedor').style.display = 'block';
+          abrirModal();
+          document.getElementById('titulo-modal').innerText = "Pagar Préstamo";
+          return;
+        }
+
         idEdicionActivo = id;
         document.getElementById('inputTipo').value = 'Egreso';
         document.getElementById('inputProyecto').value = registro.origen;
@@ -594,6 +651,42 @@
 
       function guardarTransaccion() {
         let tpRaw = document.getElementById('inputTipo').value;
+
+        if (tpRaw === 'Prestamo') {
+          let py = document.getElementById('inputProyecto').value;
+          let bo = document.getElementById('inputBanco').value;
+          let co = document.getElementById('inputConcepto').value;
+          let principal = parseFloat(document.getElementById('inputMonto').value);
+          let prestamista = document.getElementById('inputProveedor').value;
+          let tipoInteres = document.getElementById('inputTipoInteres').value;
+          let valorInteres = parseFloat(document.getElementById('inputValorInteres').value) || 0;
+
+          if (!co || !principal || principal <= 0 || !prestamista) { alert("Completa los datos (incluyendo prestamista)."); return; }
+
+          let interesMonto = (tipoInteres === 'porcentaje') ? (principal * valorInteres / 100) : valorInteres;
+
+          let transacciones = [
+            // 1) Principal entra al banco, crea CxP (estado 'Préstamo'), NO afecta margen
+            { tipo:"Ingreso", proyecto: py, concepto: co, proveedorCliente: prestamista, monto: principal, banco: bo, estado: "Préstamo" }
+          ];
+          if (interesMonto > 0) {
+            // 2) Interés afecta margen del proyecto (Egreso, sin tocar banco)
+            transacciones.push({ tipo:"Egreso", proyecto: py, concepto: `Interés préstamo de ${prestamista}`, proveedorCliente: prestamista, monto: interesMonto, banco: "Ninguno", estado: "Por Pagar" });
+          }
+
+          const btnG = document.querySelector('.btn-guardar');
+          btnG.innerText = "Guardando..."; btnG.disabled = true;
+          llamarAPI('cargaMasiva', { transacciones: transacciones }).then(r => {
+            if (r.error) { alert("Error: " + r.error); }
+            else { alert(r.mensaje); cerrarModal(); ejecutarCarga(); }
+            btnG.innerText = "Guardar"; btnG.disabled = false;
+          }).catch(err => {
+            alert("Error de conexión: " + err.message);
+            btnG.innerText = "Guardar"; btnG.disabled = false;
+          });
+          return;
+        }
+
         let tp = (tpRaw === 'Contrato') ? 'Ingreso' : tpRaw;
         let py = tpRaw === 'Transferencia' ? 'Transferencia Interna' : document.getElementById('inputProyecto').value;
         let bo = document.getElementById('inputBanco').value; let bd = document.getElementById('inputBancoDestino').value;
