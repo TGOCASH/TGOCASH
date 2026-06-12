@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8">
+    <base target="_top">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+      :root { --tgo-ocean-green: #6DC6AC; --tgo-smoky-black: #131213; --tgo-platinum: #E4E2DD; --tgo-oxford-blue: #182134; --tgo-bg-light: #F8F8F8; }
+      body { font-family: 'Aileron', 'Inter', sans-serif; background-color: var(--tgo-bg-light); color: var(--tgo-smoky-black); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+      .sidebar { width: 280px; background-color: var(--tgo-oxford-blue); color: white; display: flex; flex-direction: column; overflow-y: auto; }
+      .sidebar-header { padding: 30px 20px; text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+      .logo-tgo { max-width: 160px; height: auto; margin-bottom: 10px; }
+      .sidebar-header span { font-size: 11px; color: var(--tgo-ocean-green); text-transform: uppercase; font-weight: 600; }
+      .nav-menu { list-style: none; padding: 0; margin: 20px 0; }
+      .nav-menu li { padding: 14px 25px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; font-weight: 500; font-size: 14px; color: #B5C1DD; }
+      .nav-menu li .nav-item-content { display: flex; align-items: center; gap: 15px; }
+      .nav-menu li:hover, .nav-menu li.activo { background-color: rgba(255,255,255,0.03); color: #ffffff; border-left: 4px solid var(--tgo-ocean-green); }
+      .submenu-bancos { list-style: none; padding: 0; margin: 0; background: rgba(0, 0, 0, 0.15); display: none; }
+      .submenu-bancos li { padding: 12px 25px 12px 60px; font-size: 13px; color: #94a3b8; cursor: pointer; transition: all 0.2s; }
+      .submenu-bancos li:hover, .submenu-bancos li.activo { color: #ffffff; border-left: 4px solid var(--tgo-ocean-green); }
+      .flecha-menu { transition: transform 0.3s; font-size: 11px; }
+      .flecha-rotada { transform: rotate(90deg); }
+      .contenido-principal { flex: 1; padding: 40px; overflow-y: auto; }
+      .header-app { display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px; }
+      .header-app h1 { margin: 0; font-size: 28px; color: var(--tgo-oxford-blue); font-weight: 700; }
+      .btn-tgo { background-color: var(--tgo-ocean-green); color: var(--tgo-oxford-blue); border: none; padding: 12px 24px; border-radius: 6px; font-weight: 700; cursor: pointer; }
+      .btn-volver { background: none; border: 1px solid var(--tgo-oxford-blue); color: var(--tgo-oxford-blue); padding: 8px 16px; border-radius: 6px; font-weight: 600; cursor: pointer; display: flex; gap: 8px; margin-bottom: 25px; }
+      .kpi-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+      .kpi-card { background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--tgo-platinum); }
+      .kpi-card .kpi-titulo { font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: 700; }
+      .kpi-card .kpi-monto { font-size: 24px; font-weight: 700; color: var(--tgo-oxford-blue); display: block; margin-top: 5px; }
+      .kpi-card.balance-positivo { border-top: 4px solid var(--tgo-ocean-green); }
+      .dashboard-grid { display: grid; grid-template-columns: 1fr 320px; gap: 30px; margin-bottom: 30px; align-items: start; }
+      .tarjeta { background: #ffffff; padding: 25px; border-radius: 8px; border: 1px solid var(--tgo-platinum); }
+      .grafica-container { height: 28vh; width: 100%; display: flex; justify-content: center; }
+      .proyectos-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; }
+      .proyecto-card { background: white; border-radius: 8px; border: 1px solid var(--tgo-platinum); padding: 20px; border-top: 4px solid var(--tgo-oxford-blue); }
+      .proyecto-link-titulo { font-size: 18px; font-weight: 700; cursor: pointer; color: var(--tgo-oxford-blue); display: flex; align-items: center; justify-content: space-between; }
+      .proyecto-link-titulo:hover { color: var(--tgo-ocean-green); }
+      .proyecto-metricas { margin: 15px 0; }
+      .metrica-linea { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+      .metrica-linea.secundaria { color: #64748b; font-size: 13px; }
+      .proyecto-margen { border-top: 1px dashed #C9C9C9; padding-top: 10px; margin-top: 10px; display: flex; justify-content: space-between; font-weight: 700; }
+      .btn-accion-tabla { background-color: var(--tgo-oxford-blue); color: white; border: none; padding: 6px 12px; border-radius: 4px; font-weight: 600; cursor: pointer; }
+
+      .btn-editar-lapiz { background: none; border: none; color: #3b82f6; cursor: pointer; padding: 5px 8px; transition: color 0.2s; }
+      .btn-editar-lapiz:hover { color: #1d4ed8; }
+
+      table { width: 100%; border-collapse: collapse; margin-top: 5px; }
+      th, td { padding: 14px 12px; text-align: left; border-bottom: 1px solid var(--tgo-platinum); font-size: 14px; }
+      th { color: var(--tgo-oxford-blue); font-size: 12px; background-color: #f8fafc; }
+      .tag-ingreso { background: rgba(109,198,172,0.15); color: #2B6E5A; padding: 5px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; }
+      .tag-egreso { background: rgba(24,33,52,0.08); color: var(--tgo-oxford-blue); padding: 5px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; }
+      .tag-pendiente { background: #fee2e2; color: #991b1b; padding: 5px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; }
+      .tag-transferencia { background: #e0e7ff; color: #3730a3; padding: 5px 10px; border-radius: 4px; font-weight: 700; font-size: 12px; }
+      .btn-borrar { background: none; border: none; color: #ef4444; cursor: pointer; padding: 5px 10px; }
+      .icono-protegido { color: #94a3b8; padding-left: 10px; }
+      #mensaje-carga { text-align: center; color: var(--tgo-ocean-green); font-weight: 600; margin-top: 50px; font-size: 18px; }
+      .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(19, 18, 19, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
+      .modal { background: white; padding: 35px; border-radius: 10px; width: 100%; max-width: 450px; border-top: 5px solid var(--tgo-ocean-green); max-height: 90vh; overflow-y: auto; }
+      .form-group { margin-bottom: 20px; }
+      .form-group label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+      .form-group select, .form-group input { width: 100%; padding: 10px; border: 1px solid var(--tgo-platinum); border-radius: 5px; font-family: inherit; font-size: 14px; box-sizing: border-box; }
+      .modal-botones { display: flex; justify-content: flex-end; gap: 10px; margin-top: 30px; }
+      .btn-cancelar { background: white; border: 1px solid var(--tgo-platinum); padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+      .btn-guardar { background: var(--tgo-oxford-blue); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+
+      /* PANTALLA DE LOGIN */
+      #pantalla-login { position: fixed; top:0; left:0; width:100%; height:100%; background: var(--tgo-oxford-blue); display:flex; align-items:center; justify-content:center; z-index: 2000; }
+      .login-box { background: white; padding: 40px; border-radius: 10px; width: 320px; text-align: center; border-top: 5px solid var(--tgo-ocean-green); }
+      .login-box img { max-width: 140px; margin-bottom: 20px; }
+      .login-box input { width: 100%; padding: 12px; border: 1px solid var(--tgo-platinum); border-radius: 6px; margin: 15px 0; font-size: 14px; box-sizing: border-box; text-align: center; }
+      .login-box button { width: 100%; background: var(--tgo-oxford-blue); color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 700; cursor: pointer; }
+      #login-error { color: #ef4444; font-size: 13px; margin-top: 10px; display: none; }
+    </style>
+  </head>
+  <body>
+
+    <!-- PANTALLA DE LOGIN -->
+    <div id="pantalla-login">
+      <div class="login-box">
+        <img src="https://i.postimg.cc/MG0Bjv8s/Primary-Logo.png" alt="Logo">
+        <h3>TGO Cash</h3>
+        <input type="password" id="inputClave" placeholder="Clave de acceso" onkeydown="if(event.key==='Enter') intentarLogin()">
+        <button onclick="intentarLogin()">Entrar</button>
+        <p id="login-error">Clave incorrecta. Intenta de nuevo.</p>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div class="sidebar-header"><img src="https://i.postimg.cc/MG0Bjv8s/Primary-Logo.png" alt="Logo" class="logo-tgo"><span>Technology, Gas & Oil</span></div>
+      <ul class="nav-menu">
+        <li id="menu-dashboard" onclick="cambiarVista('dashboard')"><div class="nav-item-content"><i class="fas fa-chart-line"></i> Resumen de Caja</div></li>
+        <li id="menu-proyectos" onclick="cambiarVista('proyectos')"><div class="nav-item-content"><i class="fas fa-folder-open"></i> Proyectos</div></li>
+        <li id="menu-cobrar" onclick="cambiarVista('cobrar')"><div class="nav-item-content"><i class="fas fa-hand-holding-usd"></i> Cuentas por Cobrar</div></li>
+        <li id="menu-pagar" onclick="cambiarVista('pagar')"><div class="nav-item-content"><i class="fas fa-money-check-alt"></i> Cuentas por Pagar</div></li>
+        <li id="menu-bancos" onclick="toggleBancosMenu()"><div class="nav-item-content"><i class="fas fa-university"></i> Bancos</div><i class="fas fa-chevron-right flecha-menu" id="icono-flecha-bancos"></i></li>
+        <ul class="submenu-bancos" id="lista-submenu-bancos">
+          <li id="sub-mercury" onclick="cambiarVista('banco-mercury')"><i class="fas fa-wallet"></i> Cuenta Mercury</li>
+          <li id="sub-truist" onclick="cambiarVista('banco-truist')"><i class="fas fa-credit-card"></i> Cuenta Truist</li>
+          <li id="sub-efectivo" onclick="cambiarVista('banco-efectivo')"><i class="fas fa-money-bill-wave"></i> Efectivo</li>
+          <li id="sub-tarjeta-io" onclick="cambiarVista('banco-tarjeta-io')"><i class="fas fa-credit-card" style="color: #ef4444;"></i> Tarjeta IO Mercury</li>
+          <li id="sub-usdt" onclick="cambiarVista('banco-usdt')"><i class="fab fa-ethereum"></i> USDT Tomas</li>
+        </ul>
+      </ul>
+    </div>
+
+    <div class="contenido-principal">
+      <div class="header-app"><h1 id="titulo-pagina">Dashboard Financiero</h1><button class="btn-tgo" onclick="abrirModal()"><i class="fas fa-plus"></i> Nueva Transacción</button></div>
+      <p id="mensaje-carga"><i class="fas fa-circle-notch fa-spin"></i> Sincronizando datos corporativos...</p>
+
+      <div id="kpi-bloque" class="kpi-container" style="display: none;"></div>
+
+      <div id="vista-dashboard" class="seccion-app" style="display: none;">
+        <div class="dashboard-grid">
+          <div class="tarjeta"><h3>Libro Diario de la App (Nuevos Registros)</h3>
+            <table><thead><tr><th>Fecha</th><th>Origen</th><th>Concepto</th><th>Cuenta Utilizada</th><th>Monto</th><th style="text-align:center;">Acciones</th></tr></thead><tbody id="tabla-body"></tbody></table>
+          </div>
+          <div class="tarjeta"><h3>Distribución</h3><div class="grafica-container"><canvas id="graficaResumen"></canvas></div></div>
+        </div>
+      </div>
+      <div id="vista-proyectos" class="seccion-app" style="display: none;"><div class="proyectos-grid" id="contenedor-proyectos-cards"></div></div>
+      <div id="vista-detalle-proyecto" class="seccion-app" style="display: none;"><button class="btn-volver" onclick="cambiarVista('proyectos')"><i class="fas fa-arrow-left"></i> Volver a Proyectos</button><div class="tarjeta"><table><thead><tr><th>Fecha</th><th>Concepto</th><th>Proveedor/Cliente</th><th>Estatus</th><th>Monto</th><th style="text-align:center;">Acciones</th></tr></thead><tbody id="tabla-detalle-proyecto-body"></tbody></table></div></div>
+      <div id="vista-tablas-modulos" class="seccion-app" style="display: none;"><div class="tarjeta"><h3 id="titulo-tabla-modulo"></h3><table><thead id="header-tabla-modulo"></thead><tbody id="body-tabla-modulo"></tbody></table></div></div>
+    </div>
+
+    <div class="modal-overlay" id="modalTransaccion">
+      <div class="modal">
+        <h3 id="titulo-modal">Registrar Movimiento</h3>
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="inputTipo" onchange="ajustarFormularioPorTipo()">
+            <option value="Ingreso">Ingreso (Cobro)</option>
+            <option value="Egreso">Egreso (Gasto/Pago)</option>
+            <option value="Transferencia">Transferencia Interna</option>
+            <option value="Contrato">Nuevo Contrato (Monto del Proyecto)</option>
+          </select>
+        </div>
+        <div class="form-group" id="grupo-proyecto">
+          <label>Proyecto</label>
+          <select id="inputProyecto"><option value="PO1 Skimmer">PO #1 - Bombas Skimmer</option><option value="PO2 OIW">PO #2 - Medidores OIW</option><option value="PO3 Laboratorio">PO #3 - Laboratorio</option><option value="Gastos Operativos">Gastos Operativos Empresa</option></select>
+        </div>
+        <div class="form-group" id="grupo-proveedor" style="display:none;">
+          <label id="lbl-proveedor">Proveedor</label>
+          <input type="text" id="inputProveedor" placeholder="Nombre del proveedor">
+        </div>
+        <div class="form-group" id="grupo-banco">
+          <label id="lbl-banco">Cuenta Afectada</label>
+          <select id="inputBanco"><option value="Cuenta Mercury">Cuenta Mercury</option><option value="Cuenta Truist">Cuenta Truist</option><option value="Efectivo">Caja de Efectivo</option><option value="Tarjeta IO">Tarjeta IO</option><option value="USDT Tomas">USDT Tomas</option><option value="Ninguno" id="opt-ninguno">Ninguno (Pendiente / Crédito)</option></select>
+        </div>
+        <div class="form-group" id="grupo-banco-destino" style="display: none;">
+          <label>Cuenta Destino</label>
+          <select id="inputBancoDestino"><option value="Cuenta Mercury">Cuenta Mercury</option><option value="Cuenta Truist">Cuenta Truist</option><option value="Efectivo">Caja de Efectivo</option><option value="Tarjeta IO">Tarjeta IO</option><option value="USDT Tomas">USDT Tomas</option></select>
+        </div>
+        <div class="form-group"><label>Concepto</label><input type="text" id="inputConcepto"></div>
+        <div class="form-group"><label>Monto</label><input type="number" id="inputMonto" step="0.01"></div>
+        <div class="modal-botones"><button class="btn-cancelar" onclick="cerrarModal()">Cancelar</button><button class="btn-guardar" onclick="guardarTransaccion()">Guardar</button></div>
+      </div>
+    </div>
+
+    <script>
+      // ============================================================
+      // CONFIGURACIÓN DE CONEXIÓN AL BACKEND (Apps Script Web App)
+      // Reemplaza la URL de abajo con la URL "/exec" de tu implementación
+      // ============================================================
+      const URL_API = "https://script.google.com/macros/s/AKfycby_vqG-LCDv0O7G-HAxpgvdUoURnlY-Gw7gsoxhFDMBmppuW0iyGa9PpCkip2dan0G0/exec";
+
+      let CLAVE_SESION = null; // se llena al hacer login
+      let miGrafica = null; let datosGlobales = null; let vistaActual = 'dashboard'; let subProyectoActivo = null;
+      let idEdicionActivo = null;
+
+      const PROYECTOS_DEF = {
+        'PO1 Skimmer': 'PO #1 — Bombas Skimmer',
+        'PO2 OIW': 'PO #2 — Medidores OIW',
+        'PO3 Laboratorio': 'PO #3 — Materiales Laboratorio'
+      };
+
+      // ---------- LOGIN ----------
+      function intentarLogin() {
+        let clave = document.getElementById('inputClave').value;
+        CLAVE_SESION = clave;
+        document.getElementById('login-error').style.display = 'none';
+
+        // Probar la clave haciendo una petición real
+        fetch(`${URL_API}?action=resumen&clave=${encodeURIComponent(clave)}`)
+          .then(r => r.json())
+          .then(datos => {
+            if (datos.error) {
+              document.getElementById('login-error').innerText = datos.error;
+              document.getElementById('login-error').style.display = 'block';
+              CLAVE_SESION = null;
+              return;
+            }
+            // Clave correcta: ocultar login y cargar dashboard
+            document.getElementById('pantalla-login').style.display = 'none';
+            sessionStorage.setItem('tgo_clave', clave);
+            procesarDatos(datos);
+          })
+          .catch(err => {
+            document.getElementById('login-error').innerText = "Error de conexión: " + err.message;
+            document.getElementById('login-error').style.display = 'block';
+          });
+      }
+
+      window.onload = function() {
+        // Si ya había una clave guardada en esta pestaña, intenta usarla directo
+        let claveGuardada = sessionStorage.getItem('tgo_clave');
+        if (claveGuardada) {
+          document.getElementById('inputClave').value = claveGuardada;
+          intentarLogin();
+        }
+      };
+
+      function ejecutarCarga() {
+        document.querySelectorAll('.seccion-app').forEach(el => el.style.display = 'none');
+        document.getElementById('kpi-bloque').style.display = 'none';
+        document.getElementById('mensaje-carga').style.display = 'block';
+
+        fetch(`${URL_API}?action=resumen&clave=${encodeURIComponent(CLAVE_SESION)}`)
+          .then(r => r.json())
+          .then(datos => {
+            if (datos.error) { mostrarError({message: datos.error}); return; }
+            procesarDatos(datos);
+          })
+          .catch(err => mostrarError(err));
+      }
+
+      function mostrarError(err) {
+        document.getElementById('mensaje-carga').innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error al cargar datos: ' + err.message;
+      }
+
+      function procesarDatos(datos) {
+        datosGlobales = datos; document.getElementById('mensaje-carga').style.display = 'none'; document.getElementById('kpi-bloque').style.display = 'grid';
+        cambiarVista(vistaActual);
+      }
+
+      // ---------- LLAMADAS AL BACKEND (POST) ----------
+      function llamarAPI(action, payload) {
+        return fetch(URL_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita preflight CORS en Apps Script
+          body: JSON.stringify({ clave: CLAVE_SESION, action: action, payload: payload })
+        }).then(r => r.json());
+      }
+
+      // ---------- CÁLCULO POR PROYECTO ----------
+      function calcularProyecto(key) {
+        let registros = datosGlobales.listaDetalles.filter(f => (f.origen || '').trim() === key);
+        let r = { contratado: 0, cobrado: 0, gastado: 0, pagado: 0, porPagar: 0 };
+
+        registros.forEach(f => {
+          if (f.tipo === 'Ingreso') {
+            if (f.concepto === 'Monto del Contrato') {
+              r.contratado += f.monto;
+            } else {
+              r.cobrado += f.monto;
+            }
+          } else if (f.tipo === 'Egreso') {
+            r.gastado += f.monto;
+            if (f.estado === 'Por Pagar') {
+              r.porPagar += f.monto;
+            } else {
+              r.pagado += f.monto;
+            }
+          }
+        });
+
+        r.porCobrar = r.contratado - r.cobrado;
+        r.margen = r.contratado - r.gastado;
+        r.balanceCaja = r.cobrado - r.pagado;
+        r.registros = registros;
+        return r;
+      }
+
+      // ---------- FORMULARIO ----------
+      function ajustarFormularioPorTipo() {
+        const t = document.getElementById('inputTipo').value;
+        const grupoProyecto = document.getElementById('grupo-proyecto');
+        const grupoBancoDestino = document.getElementById('grupo-banco-destino');
+        const grupoBanco = document.getElementById('grupo-banco');
+        const grupoProveedor = document.getElementById('grupo-proveedor');
+        const opcNinguno = document.getElementById('opt-ninguno');
+        const lblBanco = document.getElementById('lbl-banco');
+        const lblProveedor = document.getElementById('lbl-proveedor');
+        const inputConcepto = document.getElementById('inputConcepto');
+        const inputBanco = document.getElementById('inputBanco');
+
+        grupoProyecto.style.display = 'block';
+        grupoBancoDestino.style.display = 'none';
+        grupoBanco.style.display = 'block';
+        grupoProveedor.style.display = 'none';
+        opcNinguno.style.display = 'block';
+
+        if (t === 'Transferencia') {
+          grupoProyecto.style.display = 'none';
+          grupoBancoDestino.style.display = 'block';
+          opcNinguno.style.display = 'none';
+          if (inputBanco.value === 'Ninguno') inputBanco.value = 'Cuenta Mercury';
+          lblBanco.innerText = "Cuenta Origen";
+        } else if (t === 'Contrato') {
+          grupoBanco.style.display = 'none';
+          inputConcepto.value = 'Monto del Contrato';
+          inputConcepto.setAttribute('readonly', 'true');
+        } else if (t === 'Egreso') {
+          lblBanco.innerText = "Cuenta Afectada";
+          grupoProveedor.style.display = 'block';
+          lblProveedor.innerText = "Proveedor (si aplica crédito)";
+          inputConcepto.removeAttribute('readonly');
+          if (inputConcepto.value === 'Monto del Contrato') inputConcepto.value = '';
+        } else {
+          lblBanco.innerText = "Cuenta Afectada";
+          inputConcepto.removeAttribute('readonly');
+          if (inputConcepto.value === 'Monto del Contrato') inputConcepto.value = '';
+        }
+      }
+
+      function cambiarVista(vista) {
+        vistaActual = vista;
+        document.querySelectorAll('.seccion-app').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.nav-menu li, .submenu-bancos li').forEach(el => el.classList.remove('activo'));
+        if(!vista.startsWith('banco-')) document.getElementById('menu-bancos').classList.remove('activo');
+
+        let cxc = [];
+        let cxp = [];
+        Object.keys(PROYECTOS_DEF).forEach(key => {
+          let calc = calcularProyecto(key);
+          if (calc.porCobrar > 0.01) {
+            cxc.push({ origen: key, titulo: PROYECTOS_DEF[key], concepto: 'Saldo de contrato pendiente', montoRestante: calc.porCobrar, fecha: '—' });
+          }
+        });
+        cxp = datosGlobales.listaDetalles.filter(f => f.tipo === 'Egreso' && f.estado === 'Por Pagar');
+
+        if (vista === 'dashboard') {
+          document.getElementById('vista-dashboard').style.display = 'block'; document.getElementById('menu-dashboard').classList.add('activo');
+          document.getElementById('titulo-pagina').innerText = "Dashboard Financiero";
+          configurarKPIs([
+            {t:"Total Contratado", m: datosGlobales.ingresos, color:'normal'},
+            {t:"Total Gastado", m: datosGlobales.egresos, color:'normal'},
+            {t:"Balance General", m: datosGlobales.ingresos - datosGlobales.egresos, color:'auto'}
+          ]);
+
+          if(miGrafica) miGrafica.destroy();
+          miGrafica = new Chart(document.getElementById('graficaResumen'), { type: 'doughnut', data: { labels: ['Contratado/Ganado', 'Gastado'], datasets: [{ data: [datosGlobales.ingresos, datosGlobales.egresos], backgroundColor: ['#6DC6AC', '#182134'], borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, cutout: '75%' } });
+
+          let t = document.getElementById('tabla-body'); t.innerHTML = "";
+          let unicamenteApp = datosGlobales.listaDetalles.filter(f => f.id !== null);
+          if (unicamenteApp.length === 0) {
+            t.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b; padding:20px;"><i class="fas fa-info-circle"></i> No has registrado nuevos movimientos hoy. Usa el botón superior de "+ Nueva Transacción".</td></tr>`;
+          } else {
+            unicamenteApp.slice().reverse().forEach(f => {
+              let tc = f.tipo === 'Ingreso' ? 'tag-ingreso' : 'tag-egreso'; if(f.tipo === 'Transferencia') tc = 'tag-transferencia';
+              let cEsc = f.concepto.replace(/'/g, "\\'");
+              let pEsc = (f.proveedorCliente||'').replace(/'/g, "\\'");
+              t.innerHTML += `<tr><td>${f.fecha}</td><td><strong>${f.origen}</strong></td><td>${f.concepto}</td><td><span class="${tc}">${f.banco}</span></td><td><strong>${formatUSD(f.monto)}</strong></td><td style="text-align:center;">
+                <button class="btn-editar-lapiz" onclick="abrirEditarModal('${f.id}', '${f.tipo}', '${f.origen}', '${f.banco}', '${cEsc}', ${f.monto}, '${pEsc}', '${f.estado}')" title="Modificar Registro"><i class="fas fa-edit"></i></button>
+                <button class="btn-borrar" onclick="borrar('${f.id}', '${cEsc}')" title="Eliminar Registro"><i class="fas fa-trash-alt"></i></button>
+              </td></tr>`;
+            });
+          }
+        } else if (vista === 'proyectos') {
+          document.getElementById('vista-proyectos').style.display = 'block'; document.getElementById('menu-proyectos').classList.add('activo');
+          document.getElementById('titulo-pagina').innerText = "Control de Proyectos";
+          configurarKPIs([
+            {t:"Total Contratado", m: datosGlobales.ingresos, color:'normal'},
+            {t:"Total Gastado", m: datosGlobales.egresos, color:'normal'},
+            {t:"Balance General", m: datosGlobales.ingresos - datosGlobales.egresos, color:'auto'}
+          ]);
+
+          let c = document.getElementById('contenedor-proyectos-cards'); c.innerHTML = "";
+          Object.keys(PROYECTOS_DEF).forEach(key => {
+            let calc = calcularProyecto(key);
+            let titulo = PROYECTOS_DEF[key];
+            c.innerHTML += `<div class="proyecto-card">
+              <div class="proyecto-link-titulo" onclick="subProyectoActivo={key:'${key}', titulo:'${titulo}'}; cambiarVista('detalle-proyecto');"><span>${titulo}</span><i class="fas fa-arrow-right"></i></div>
+              <div class="proyecto-metricas">
+                <div class="metrica-linea"><span>Contratado:</span><span>${formatUSD(calc.contratado)}</span></div>
+                <div class="metrica-linea"><span>Cobrado:</span><span style="color:#2B6E5A">${formatUSD(calc.cobrado)}</span></div>
+                <div class="metrica-linea secundaria"><span>Por Cobrar:</span><span>${formatUSD(calc.porCobrar)}</span></div>
+                <div class="metrica-linea"><span>Gastado (total):</span><span>${formatUSD(calc.gastado)}</span></div>
+                <div class="metrica-linea secundaria"><span>Por Pagar:</span><span>${formatUSD(calc.porPagar)}</span></div>
+                <div class="proyecto-margen" style="color:${calc.margen>=0?'#2B6E5A':'#991b1b'}"><span>Margen Proyectado:</span><span>${formatUSD(calc.margen)}</span></div>
+              </div>
+            </div>`;
+          });
+
+          let gastosOp = datosGlobales.listaDetalles.filter(f => (f.origen||'').trim() === 'Gastos Operativos');
+          let totalGastosOp = gastosOp.reduce((s,f) => s + (f.tipo==='Egreso' ? f.monto : 0), 0);
+          c.innerHTML += `<div class="proyecto-card" style="border-top-color:#64748b;">
+            <div class="proyecto-link-titulo" onclick="subProyectoActivo={key:'Gastos Operativos', titulo:'Gastos Operativos Empresa'}; cambiarVista('detalle-proyecto');"><span>Gastos Operativos Empresa</span><i class="fas fa-arrow-right"></i></div>
+            <div class="proyecto-metricas">
+              <div class="metrica-linea"><span>Total Gastado:</span><span>${formatUSD(totalGastosOp)}</span></div>
+            </div>
+          </div>`;
+
+        } else if (vista === 'detalle-proyecto') {
+          document.getElementById('vista-detalle-proyecto').style.display = 'block'; document.getElementById('titulo-pagina').innerText = subProyectoActivo.titulo;
+          let key = subProyectoActivo.key;
+          let tb = document.getElementById('tabla-detalle-proyecto-body'); tb.innerHTML = "";
+
+          if (key === 'Gastos Operativos') {
+            let fs = datosGlobales.listaDetalles.filter(f => (f.origen||'').trim() === key);
+            let total = 0;
+            fs.forEach(f => {
+              total += f.monto;
+              let cEsc = f.concepto.replace(/'/g, "\\'");
+              let pEsc = (f.proveedorCliente||'').replace(/'/g, "\\'");
+              let btnAcciones = f.id !== null
+                ? `<button class="btn-editar-lapiz" onclick="abrirEditarModal('${f.id}', '${f.tipo}', '${f.origen}', '${f.banco}', '${cEsc}', ${f.monto}, '${pEsc}', '${f.estado}')" title="Modificar"><i class="fas fa-edit"></i></button><button class="btn-borrar" onclick="borrar('${f.id}', '${cEsc}')" title="Eliminar"><i class="fas fa-trash-alt"></i></button>`
+                : `<i class="fas fa-lock icono-protegido"></i>`;
+              let tc = f.estado === 'Por Pagar' ? 'tag-pendiente' : 'tag-egreso';
+              tb.innerHTML += `<tr><td>${f.fecha}</td><td><strong>${f.concepto}</strong></td><td>${f.proveedorCliente||'—'}</td><td><span class="${tc}">${f.estado}</span></td><td><strong>${formatUSD(f.monto)}</strong></td><td style="text-align:center;">${btnAcciones}</td></tr>`;
+            });
+            configurarKPIs([{t:"Total Gastado", m: total, color:'normal'}]);
+          } else {
+            let calc = calcularProyecto(key);
+            calc.registros.forEach(f => {
+              let tc = f.tipo === 'Ingreso' ? 'tag-ingreso' : 'tag-egreso';
+              if (f.estado === 'Pendiente' || f.estado === 'Por Pagar') tc = 'tag-pendiente';
+              let cEsc = f.concepto.replace(/'/g, "\\'");
+              let pEsc = (f.proveedorCliente||'').replace(/'/g, "\\'");
+              let btnAcciones = f.id !== null
+                ? `<button class="btn-editar-lapiz" onclick="abrirEditarModal('${f.id}', '${f.tipo}', '${f.origen}', '${f.banco}', '${cEsc}', ${f.monto}, '${pEsc}', '${f.estado}')" title="Modificar"><i class="fas fa-edit"></i></button><button class="btn-borrar" onclick="borrar('${f.id}', '${cEsc}')" title="Eliminar"><i class="fas fa-trash-alt"></i></button>`
+                : `<i class="fas fa-lock icono-protegido"></i>`;
+              tb.innerHTML += `<tr><td>${f.fecha}</td><td><strong>${f.concepto}</strong></td><td>${f.proveedorCliente||'—'}</td><td><span class="${tc}">${f.estado}</span></td><td><strong>${formatUSD(f.monto)}</strong></td><td style="text-align:center;">${btnAcciones}</td></tr>`;
+            });
+            configurarKPIs([
+              {t:"Contratado", m: calc.contratado, color:'normal'},
+              {t:"Cobrado", m: calc.cobrado, color:'normal'},
+              {t:"Por Cobrar", m: calc.porCobrar, color:'normal'},
+              {t:"Gastado", m: calc.gastado, color:'normal'},
+              {t:"Por Pagar", m: calc.porPagar, color:'normal'},
+              {t:"Margen Proyectado", m: calc.margen, color:'auto'}
+            ]);
+          }
+        } else if (vista === 'cobrar') {
+          document.getElementById('vista-tablas-modulos').style.display = 'block'; document.getElementById('menu-cobrar').classList.add('activo');
+          document.getElementById('titulo-pagina').innerText = "Cuentas por Cobrar"; document.getElementById('titulo-tabla-modulo').innerHTML = "<i class='fas fa-hand-holding-usd'></i> Saldos Pendientes por Proyecto";
+          let totalPorCobrar = cxc.reduce((a,b)=>a+b.montoRestante, 0);
+          configurarKPIs([
+            {t:"Total Contratado", m: datosGlobales.ingresos, color:'normal'},
+            {t:"Total Cobrado", m: datosGlobales.ingresos - totalPorCobrar, color:'normal'},
+            {t:"Total por Cobrar", m: totalPorCobrar, color:'normal'}
+          ]);
+          dibujarTbl(["Proyecto", "Concepto", "Monto Pendiente", "Acción"], cxc, 'cobrar');
+        } else if (vista === 'pagar') {
+          document.getElementById('vista-tablas-modulos').style.display = 'block'; document.getElementById('menu-pagar').classList.add('activo');
+          document.getElementById('titulo-pagina').innerText = "Cuentas por Pagar"; document.getElementById('titulo-tabla-modulo').innerHTML = "<i class='fas fa-money-check-alt'></i> Créditos y Deudas a Proveedores";
+          let totalPorPagar = cxp.reduce((a,b)=>a+b.monto, 0);
+          configurarKPIs([
+            {t:"Total Costos", m: datosGlobales.egresos, color:'normal'},
+            {t:"Total Pagado", m: datosGlobales.egresos - totalPorPagar, color:'normal'},
+            {t:"Total por Pagar", m: totalPorPagar, color:'normal'}
+          ]);
+          dibujarTbl(["Fecha", "Proyecto", "Proveedor", "Concepto", "Monto", "Acción"], cxp, 'pagar');
+        } else if (vista.startsWith('banco-')) {
+          document.getElementById('vista-tablas-modulos').style.display = 'block'; document.getElementById('menu-bancos').classList.add('activo');
+          let n = ""; if(vista==='banco-mercury')n="Cuenta Mercury"; if(vista==='banco-truist')n="Cuenta Truist"; if(vista==='banco-efectivo')n="Efectivo"; if(vista==='banco-tarjeta-io')n="Tarjeta IO"; if(vista==='banco-usdt')n="USDT Tomas";
+          document.getElementById('sub-'+n.split(" ")[n.split(" ").length-1].toLowerCase()).classList.add('activo');
+          document.getElementById('titulo-pagina').innerText = n; document.getElementById('titulo-tabla-modulo').innerHTML = `<i class='fas fa-university'></i> Libro Diario: ${n}`;
+          let fts = datosGlobales.listaDetalles.filter(f => f.banco === n || (f.tipo === 'Transferencia' && f.banco.includes(n)));
+          let en = 0, sa = 0; fts.forEach(f => { if(f.tipo === 'Transferencia') { let p = f.banco.split(" -> "); if(p[0] === n) sa += f.monto; if(p[1] === n) en += f.monto; } else { if(f.tipo === 'Ingreso') en += f.monto; if(f.tipo === 'Egreso') sa += f.monto; } });
+          configurarKPIs([
+            {t:"Entradas", m: en, color:'normal'},
+            {t:"Salidas", m: sa, color:'normal'},
+            {t:"Disponible", m: datosGlobales.saldosIniciales[n] + en - sa, color:'auto'}
+          ]);
+          dibujarTbl(["Fecha", "Proyecto / Contexto", "Detalle", "Tipo", "Monto", "Acciones"], fts, 'banco');
+        }
+      }
+
+      function dibujarTbl(h, items, ctx) {
+        let th = document.getElementById('header-tabla-modulo'); let tb = document.getElementById('body-tabla-modulo');
+        th.innerHTML = "<tr>" + h.map(x=>`<th>${x}</th>`).join("") + "</tr>"; tb.innerHTML = "";
+        if(items.length===0){ tb.innerHTML = `<tr><td colspan="${h.length}" style="text-align:center; padding:40px; color:#64748b;">Nada pendiente por aquí.</td></tr>`; return; }
+        items.forEach(f => {
+          let btn = "";
+          if(ctx==='cobrar') {
+            btn = `<button class="btn-accion-tabla" onclick="abonoRap('Ingreso','${f.origen}','Abono recibido',${f.montoRestante})">Registrar Cobro</button>`;
+            tb.innerHTML += `<tr><td><strong>${f.titulo}</strong></td><td>${f.concepto}</td><td><strong>${formatUSD(f.montoRestante)}</strong></td><td>${btn}</td></tr>`;
+            return;
+          }
+          if(ctx==='pagar') {
+            btn = `<button class="btn-accion-tabla" onclick="marcarComoPagado('${f.id}')">Marcar Pagado</button>`;
+            tb.innerHTML += `<tr><td>${f.fecha}</td><td><strong>${f.origen}</strong></td><td>${f.proveedorCliente||'—'}</td><td>${f.concepto}</td><td><strong>${formatUSD(f.monto)}</strong></td><td>${btn}</td></tr>`;
+            return;
+          }
+          if(ctx==='banco') {
+            let cEsc = f.concepto.replace(/'/g, "\\'");
+            let pEsc = (f.proveedorCliente||'').replace(/'/g, "\\'");
+            let btnEdit = f.id !== null ? `<button class="btn-editar-lapiz" onclick="abrirEditarModal('${f.id}', '${f.tipo}', '${f.origen}', '${f.banco}', '${cEsc}', ${f.monto}, '${pEsc}', '${f.estado}')" title="Modificar"><i class="fas fa-edit"></i></button>` : '';
+            let btnTrash = f.id !== null ? `<button class="btn-borrar" onclick="borrar('${f.id}', '${cEsc}')" title="Eliminar"><i class="fas fa-trash-alt"></i></button>` : `<i class="fas fa-lock icono-protegido"></i>`;
+            btn = btnEdit + btnTrash;
+            let tc = f.tipo === 'Ingreso' ? 'tag-ingreso' : 'tag-egreso'; if(f.tipo === 'Transferencia') tc = 'tag-transferencia';
+            tb.innerHTML += `<tr><td>${f.fecha}</td><td><strong>${f.origen}</strong></td><td>${f.concepto}</td><td><span class="${tc}">${f.tipo}</span></td><td><strong>${formatUSD(f.monto)}</strong></td><td>${btn}</td></tr>`;
+          }
+        });
+      }
+
+      function marcarComoPagado(id) {
+        let registro = datosGlobales.listaDetalles.find(f => f.id === id);
+        if (!registro) return;
+        idEdicionActivo = id;
+        document.getElementById('inputTipo').value = 'Egreso';
+        document.getElementById('inputProyecto').value = registro.origen;
+        document.getElementById('inputConcepto').value = registro.concepto;
+        document.getElementById('inputMonto').value = registro.monto;
+        document.getElementById('inputProveedor').value = registro.proveedorCliente || '';
+        document.getElementById('inputBanco').value = "Cuenta Mercury";
+        ajustarFormularioPorTipo();
+        document.getElementById('grupo-proveedor').style.display = 'block';
+        abrirModal();
+        document.getElementById('titulo-modal').innerText = "Registrar Pago a Proveedor";
+      }
+
+      function abonoRap(tipo, proyecto, conceptoSugerido, max) {
+        idEdicionActivo = null;
+        abrirModal();
+        document.getElementById('inputTipo').value = tipo;
+        ajustarFormularioPorTipo();
+        document.getElementById('inputProyecto').value = proyecto;
+        document.getElementById('inputConcepto').value = conceptoSugerido;
+        document.getElementById('inputMonto').value = max;
+        document.getElementById('inputBanco').value = "Cuenta Mercury";
+        document.getElementById('titulo-modal').innerText = "Registrar Cobro";
+      }
+
+      function toggleBancosMenu() { let s = document.getElementById('lista-submenu-bancos'); s.style.display = s.style.display === 'block' ? 'none' : 'block'; document.getElementById('icono-flecha-bancos').classList.toggle('flecha-rotada'); }
+
+      function configurarKPIs(items) {
+        let cont = document.getElementById('kpi-bloque');
+        cont.innerHTML = "";
+        items.forEach((item) => {
+          let colorClase = '';
+          let borderStyle = '';
+          if (item.color === 'auto') {
+            let esNegativo = item.m < 0;
+            colorClase = esNegativo ? 'color:#991b1b;' : 'color:#2B6E5A;';
+            borderStyle = esNegativo ? 'border-top:4px solid #ef4444;' : 'border-top:4px solid var(--tgo-ocean-green);';
+          }
+          cont.innerHTML += `<div class="kpi-card" style="${borderStyle}">
+            <span class="kpi-titulo">${item.t}</span>
+            <span class="kpi-monto" style="${colorClase}">${formatUSD(item.m)}</span>
+          </div>`;
+        });
+      }
+
+      function formatUSD(n) { return new Intl.NumberFormat('en-US', {style:'currency',currency:'USD'}).format(n); }
+
+      function abrirModal() {
+        if(!idEdicionActivo) { document.getElementById('titulo-modal').innerText = "Registrar Movimiento"; }
+        document.getElementById('modalTransaccion').style.display='flex';
+        ajustarFormularioPorTipo();
+      }
+
+      function cerrarModal() {
+        document.getElementById('modalTransaccion').style.display='none';
+        document.getElementById('inputConcepto').value='';
+        document.getElementById('inputConcepto').removeAttribute('readonly');
+        document.getElementById('inputMonto').value='';
+        document.getElementById('inputProveedor').value='';
+        document.getElementById('inputTipo').value='Ingreso';
+        idEdicionActivo = null;
+        document.getElementById('titulo-modal').innerText = "Registrar Movimiento";
+      }
+
+      function abrirEditarModal(id, tipo, proyecto, banco, concepto, monto, proveedorCliente, estado) {
+        idEdicionActivo = id;
+        let tipoForm = (concepto === 'Monto del Contrato') ? 'Contrato' : tipo;
+        document.getElementById('inputTipo').value = tipoForm;
+        document.getElementById('inputProyecto').value = (tipo === 'Transferencia') ? 'PO1 Skimmer' : proyecto;
+        document.getElementById('inputConcepto').value = concepto;
+        document.getElementById('inputMonto').value = monto;
+        document.getElementById('inputProveedor').value = proveedorCliente || '';
+
+        if (tipo === 'Transferencia') {
+          let partes = banco.split(" -> ");
+          document.getElementById('inputBanco').value = partes[0] || "Cuenta Mercury";
+          document.getElementById('inputBancoDestino').value = partes[1] || "Cuenta Truist";
+        } else {
+          document.getElementById('inputBanco').value = (banco === 'Ninguno') ? 'Ninguno' : banco;
+        }
+        abrirModal();
+        document.getElementById('titulo-modal').innerText = "Editar Transacción";
+      }
+
+      function guardarTransaccion() {
+        let tpRaw = document.getElementById('inputTipo').value;
+        let tp = (tpRaw === 'Contrato') ? 'Ingreso' : tpRaw;
+        let py = tpRaw === 'Transferencia' ? 'Transferencia Interna' : document.getElementById('inputProyecto').value;
+        let bo = document.getElementById('inputBanco').value; let bd = document.getElementById('inputBancoDestino').value;
+        let co = document.getElementById('inputConcepto').value; let mo = document.getElementById('inputMonto').value;
+        let proveedor = document.getElementById('inputProveedor').value;
+
+        if(!co || !mo || mo<=0) { alert("Completa los datos."); return; }
+        if(tpRaw === 'Transferencia' && bo === bd) { alert("El origen y destino no pueden ser iguales."); return; }
+
+        let bf = tpRaw === 'Transferencia' ? `${bo} -> ${bd}` : bo;
+        if (tpRaw === 'Contrato') bf = 'Ninguno';
+
+        let estadoForzado = '';
+        if (tpRaw === 'Contrato') estadoForzado = 'Pendiente';
+
+        const btnG = document.querySelector('.btn-guardar');
+        btnG.innerText = "Guardando..."; btnG.disabled = true;
+        const datosFormulario = {tipo:tp, proyecto:py, banco:bf, concepto:co, monto:mo, proveedorCliente: proveedor, estado: estadoForzado};
+
+        let promesa;
+        if (idEdicionActivo) {
+          promesa = llamarAPI('editar', { uuid: idEdicionActivo, datos: datosFormulario });
+        } else {
+          promesa = llamarAPI('guardar', datosFormulario);
+        }
+
+        promesa.then(r => {
+          if (r.error) { alert("Error: " + r.error); }
+          else { alert(r.mensaje); cerrarModal(); ejecutarCarga(); }
+          btnG.innerText = "Guardar"; btnG.disabled = false;
+        }).catch(err => {
+          alert("Error de conexión: " + err.message);
+          btnG.innerText = "Guardar"; btnG.disabled = false;
+        });
+      }
+
+      function borrar(id, c) {
+        if(!confirm(`¿Eliminar permanentemente: "${c}"?`)) return;
+        llamarAPI('eliminar', { uuid: id }).then(r => {
+          if (r.error) { alert("Error: " + r.error); }
+          else { alert(r.mensaje); ejecutarCarga(); }
+        }).catch(err => alert("Error de conexión: " + err.message));
+      }
+    </script>
+  </body>
+</html>
