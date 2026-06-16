@@ -503,7 +503,7 @@
         } else if (vista.startsWith('banco-')) {
           document.getElementById('vista-tablas-modulos').style.display = 'block'; document.getElementById('menu-bancos').classList.add('activo');
           let n = ""; if(vista==='banco-mercury')n="Cuenta Mercury"; if(vista==='banco-truist')n="Cuenta Truist"; if(vista==='banco-efectivo')n="Efectivo"; if(vista==='banco-tarjeta-io')n="Tarjeta IO"; if(vista==='banco-usdt')n="USDT Tomas";
-          document.getElementById('sub-'+n.split(" ")[n.split(" ").length-1].toLowerCase()).classList.add('activo');
+          document.getElementById(vista.replace('banco-','sub-')).classList.add('activo');
           document.getElementById('titulo-pagina').innerText = n; document.getElementById('titulo-tabla-modulo').innerHTML = `<i class='fas fa-university'></i> Libro Diario: ${n}`;
           let fts = datosGlobales.listaDetalles.filter(f => f.banco === n || (f.tipo === 'Transferencia' && f.banco.includes(n)));
           let en = 0, sa = 0; fts.forEach(f => { if(f.tipo === 'Transferencia') { let p = f.banco.split(" -> "); if(p[0] === n) sa += f.monto; if(p[1] === n) en += f.monto; } else { if(f.tipo === 'Ingreso') en += f.monto; if(f.tipo === 'Egreso') sa += f.monto; } });
