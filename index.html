@@ -156,7 +156,8 @@
         </div>
         <div class="form-group" id="grupo-proyecto">
           <label>Proyecto</label>
-          <select id="inputProyecto"><option value="PO1 Skimmer">PO #1 - Bombas Skimmer</option><option value="PO2 OIW">PO #2 - Medidores OIW</option><option value="PO3 Laboratorio">PO #3 - Laboratorio</option><option value="Gastos Operativos">Gastos Operativos Empresa</option></select>
+          <select id="inputProyecto" onchange="toggleProyectoManual()"><option value="PO1 Skimmer">PO #1 - Bombas Skimmer</option><option value="PO2 OIW">PO #2 - Medidores OIW</option><option value="PO3 Laboratorio">PO #3 - Laboratorio</option><option value="PO4 Lavaojos">PO #4 - Lavaojos + Inyectores</option><option value="Gastos Operativos">Gastos Operativos Empresa</option><option value="__nuevo__">+ Nuevo proyecto (escribir)...</option></select>
+          <input type="text" id="inputProyectoManual" placeholder="Ej: PO5 Nombre del proyecto" style="display:none; margin-top:8px;">
         </div>
         <div class="form-group" id="grupo-proveedor" style="display:none;">
           <label id="lbl-proveedor">Proveedor</label>
@@ -190,7 +191,8 @@
       const PROYECTOS_DEF = {
         'PO1 Skimmer': 'PO #1 — Bombas Skimmer',
         'PO2 OIW': 'PO #2 — Medidores OIW',
-        'PO3 Laboratorio': 'PO #3 — Materiales Laboratorio'
+        'PO3 Laboratorio': 'PO #3 — Materiales Laboratorio',
+        'PO4 Lavaojos': 'PO #4 — Lavaojos + Inyectores'
       };
 
       // ---------- LOGIN ----------
@@ -357,6 +359,21 @@
         let total = principal + interesMonto;
         document.getElementById('texto-interes-calculado').innerText =
           `Interés: ${formatUSD(interesMonto)} · Total a devolver: ${formatUSD(total)}`;
+      }
+
+      function toggleProyectoManual() {
+        let sel = document.getElementById('inputProyecto').value;
+        let manual = document.getElementById('inputProyectoManual');
+        manual.style.display = (sel === '__nuevo__') ? 'block' : 'none';
+      }
+
+      function obtenerProyectoSeleccionado() {
+        let sel = document.getElementById('inputProyecto').value;
+        if (sel === '__nuevo__') {
+          let manual = document.getElementById('inputProyectoManual').value.trim();
+          return manual || '';
+        }
+        return sel;
       }
 
       function cambiarVista(vista) {
@@ -624,6 +641,8 @@
         document.getElementById('inputConcepto').removeAttribute('readonly');
         document.getElementById('inputMonto').value='';
         document.getElementById('inputProveedor').value='';
+        document.getElementById('inputProyectoManual').value='';
+        document.getElementById('inputProyectoManual').style.display='none';
         document.getElementById('inputTipo').value='Ingreso';
         idEdicionActivo = null;
         document.getElementById('titulo-modal').innerText = "Registrar Movimiento";
@@ -653,7 +672,7 @@
         let tpRaw = document.getElementById('inputTipo').value;
 
         if (tpRaw === 'Prestamo') {
-          let py = document.getElementById('inputProyecto').value;
+          let py = obtenerProyectoSeleccionado();
           let bo = document.getElementById('inputBanco').value;
           let co = document.getElementById('inputConcepto').value;
           let principal = parseFloat(document.getElementById('inputMonto').value);
@@ -661,7 +680,7 @@
           let tipoInteres = document.getElementById('inputTipoInteres').value;
           let valorInteres = parseFloat(document.getElementById('inputValorInteres').value) || 0;
 
-          if (!co || !principal || principal <= 0 || !prestamista) { alert("Completa los datos (incluyendo prestamista)."); return; }
+          if (!py || !co || !principal || principal <= 0 || !prestamista) { alert("Completa todos los datos (proyecto, prestamista, monto)."); return; }
 
           let interesMonto = (tipoInteres === 'porcentaje') ? (principal * valorInteres / 100) : valorInteres;
 
@@ -688,7 +707,8 @@
         }
 
         let tp = (tpRaw === 'Contrato') ? 'Ingreso' : tpRaw;
-        let py = tpRaw === 'Transferencia' ? 'Transferencia Interna' : document.getElementById('inputProyecto').value;
+        let py = tpRaw === 'Transferencia' ? 'Transferencia Interna' : obtenerProyectoSeleccionado();
+        if (!py) { alert("Escribe el nombre del nuevo proyecto."); return; }
         let bo = document.getElementById('inputBanco').value; let bd = document.getElementById('inputBancoDestino').value;
         let co = document.getElementById('inputConcepto').value; let mo = document.getElementById('inputMonto').value;
         let proveedor = document.getElementById('inputProveedor').value;
