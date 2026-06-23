@@ -424,44 +424,14 @@
         if (vista === 'dashboard') {
           document.getElementById('vista-dashboard').style.display = 'block'; document.getElementById('menu-dashboard').classList.add('activo');
           document.getElementById('titulo-pagina').innerText = "Dashboard Financiero";
-
-          // Calcular saldo real en bancos (saldo inicial + entradas - salidas de cada cuenta)
-          let totalEnBancos = 0;
-          Object.keys(datosGlobales.saldosIniciales).forEach(banco => {
-            let en = 0, sa = 0;
-            datosGlobales.listaDetalles.forEach(f => {
-              if (f.tipo === 'Transferencia') {
-                let p = f.banco.split(" -> ");
-                if (p[0] === banco) sa += f.monto;
-                if (p[1] === banco) en += f.monto;
-              } else if (f.banco === banco) {
-                if (f.tipo === 'Ingreso') en += f.monto;
-                if (f.tipo === 'Egreso') sa += f.monto;
-              }
-            });
-            totalEnBancos += datosGlobales.saldosIniciales[banco] + en - sa;
-          });
-
-          // CxC: total pendiente de cobrar
-          let totalPorCobrar = 0;
-          Object.keys(PROYECTOS_DEF).forEach(key => {
-            let calc = calcularProyecto(key);
-            if (calc.porCobrar > 0.01) totalPorCobrar += calc.porCobrar;
-          });
-
-          // CxP: total pendiente de pagar
-          let totalPorPagar = datosGlobales.listaDetalles
-            .filter(f => (f.tipo === 'Egreso' && f.estado === 'Por Pagar') || (f.tipo === 'Ingreso' && f.estado === 'Préstamo'))
-            .reduce((s, f) => s + f.monto, 0);
-
           configurarKPIs([
-            {t:"Total en Bancos (Caja Real)", m: totalEnBancos, color:'auto'},
-            {t:"Total por Cobrar (CxC)", m: totalPorCobrar, color:'normal'},
-            {t:"Total por Pagar (CxP)", m: totalPorPagar, color:'normal'}
+            {t:"Total Contratado", m: datosGlobales.ingresos, color:'normal'},
+            {t:"Total Cobrado", m: datosGlobales.ingresos - (Object.keys(PROYECTOS_DEF).reduce((s,k) => s + calcularProyecto(k).porCobrar, 0)), color:'normal'},
+            {t:"Balance General", m: datosGlobales.ingresos - datosGlobales.egresos, color:'auto'}
           ]);
 
           if(miGrafica) miGrafica.destroy();
-          miGrafica = new Chart(document.getElementById('graficaResumen'), { type: 'doughnut', data: { labels: ['En Bancos', 'Por Cobrar', 'Por Pagar'], datasets: [{ data: [Math.max(0,totalEnBancos), totalPorCobrar, totalPorPagar], backgroundColor: ['#6DC6AC', '#182134', '#94a3b8'], borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, cutout: '75%' } });
+          miGrafica = new Chart(document.getElementById('graficaResumen'), { type: 'doughnut', data: { labels: ['Contratado/Ganado', 'Gastado'], datasets: [{ data: [datosGlobales.ingresos, datosGlobales.egresos], backgroundColor: ['#6DC6AC', '#182134'], borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, cutout: '75%' } });
 
           let t = document.getElementById('tabla-body'); t.innerHTML = "";
           let unicamenteApp = datosGlobales.listaDetalles.filter(f => f.id !== null);
